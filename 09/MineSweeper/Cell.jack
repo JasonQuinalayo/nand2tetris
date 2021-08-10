@@ -1,0 +1,236 @@
+class Cell {
+    // to save memory I put four boolean values in a single int
+    // is_bosf = isBomb_isOpened_isSelected_isFlagged
+    field int is_bosf;
+    field int numberOfNeighboringBombs;
+    field int topLeftX, topLeftY;
+    static int dimension;
+
+    constructor Cell new(int x, int y) {
+        let is_bosf = 0;
+        let numberOfNeighboringBombs = 0;
+        let topLeftX = x;
+        let topLeftY = y;
+        return this;
+    }
+
+    function void setDimension(int dim) {
+        let dimension = dim;
+        return;
+    }
+
+    method void setBomb() {
+        let is_bosf = is_bosf | 8;
+        return;
+    }
+
+    method void removeBomb() {
+        let is_bosf = is_bosf & 7;
+        return;
+    }
+
+    method void select() {
+        let is_bosf = is_bosf | 2;
+        return;
+    }
+
+    method void deselect() {
+        let is_bosf = is_bosf & 13;
+        return;
+    }
+
+    method void close() {
+        let is_bosf = is_bosf & 11;
+        return;
+    }
+
+    method void open() {
+        let is_bosf = is_bosf | 4;
+        return;
+    }
+
+    method void flag() {
+        let is_bosf = is_bosf | 1;
+        return;
+    }
+
+    method void removeFlag() {
+        let is_bosf = is_bosf & 14;
+        return;
+    }
+
+    method bool isOpen() {
+        return (is_bosf & 4) > 0;
+    }
+    
+    method bool isSelected() {
+        return (is_bosf & 2) > 0;
+    }
+
+    method bool isBomb() {
+        return (is_bosf & 8) > 0;
+    }
+
+    method bool isFlagged() {
+        return (is_bosf & 1) > 0;
+    }
+    
+    method void setNumberOfNeighboringBombs(int num) {
+        let numberOfNeighboringBombs = num;
+        return;
+    }
+
+    method int getNumberOfNeighboringBombs() {
+        return numberOfNeighboringBombs;
+    }
+
+    method void draw() {
+        do clear();
+        if (isOpen()) {
+            if (isBomb()) {
+                do drawBomb();
+            } else {
+                do drawNum(numberOfNeighboringBombs);
+            }
+        }
+        else {
+            do Screen.setColor(true);
+            do Screen.drawRectangle(topLeftX, topLeftY, topLeftX + dimension, topLeftY + dimension);
+            if (isFlagged()) { do drawFlag(); }
+        }
+        if (isSelected()) {
+            do drawSelect();
+        }
+        return;
+    }
+
+    method void clear() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(topLeftX-1, topLeftY-1, topLeftX + dimension+1, topLeftY + dimension+1);
+        return;
+    }
+
+    method void drawSelect() {
+        if (isOpen()) {
+            do Screen.setColor(true);
+            do Screen.drawRectangle(topLeftX - 1, topLeftY - 1, topLeftX + dimension + 1, topLeftY);
+            do Screen.drawRectangle(topLeftX - 1, topLeftY + 1, topLeftX, topLeftY + dimension - 1);
+            do Screen.drawRectangle(topLeftX - 1, topLeftY + dimension, topLeftX + dimension + 1, topLeftY + dimension + 1);
+            do Screen.drawRectangle(topLeftX + dimension, topLeftY + 1, topLeftX + dimension + 1, topLeftY + dimension - 1);
+        } else {
+            do Screen.setColor(false);
+            do Screen.drawRectangle(topLeftX - 1, topLeftY - 1, topLeftX + dimension + 1, topLeftY + 1);
+            do Screen.drawRectangle(topLeftX - 1, topLeftY + 1, topLeftX + 1, topLeftY + dimension - 1);
+            do Screen.drawRectangle(topLeftX - 1, topLeftY + dimension - 1, topLeftX + dimension + 1, topLeftY + dimension + 1);
+            do Screen.drawRectangle(topLeftX + dimension - 1, topLeftY + 1, topLeftX + dimension + 1, topLeftY + dimension - 1);
+        }
+        return;
+    }
+
+    method void drawBomb() {
+        do Screen.setColor(true);
+        do Screen.drawRectangle(topLeftX, topLeftY, topLeftX + dimension, topLeftY + dimension);
+        do Screen.setColor(false);
+        do Screen.drawLine(topLeftX+ 1, topLeftY + 2, topLeftX + dimension - 2, topLeftY + dimension - 1);
+        do Screen.drawLine(topLeftX + 1, topLeftY + 1, topLeftX + dimension - 1, topLeftY + dimension - 1);
+        do Screen.drawLine(topLeftX +2, topLeftY + 1, topLeftX + dimension - 1, topLeftY + dimension - 2);
+        do Screen.drawRectangle(topLeftX + 5, topLeftY + 1, topLeftX + 6, topLeftY + dimension - 1);
+        do Screen.drawLine(topLeftX + 1, topLeftY + dimension - 2, topLeftX + dimension - 2, topLeftY + 1);
+        do Screen.drawLine(topLeftX + 1, topLeftY + dimension - 1, topLeftX + dimension - 1, topLeftY + 1);
+        do Screen.drawLine(topLeftX + 2, topLeftY + dimension - 1, topLeftX + dimension - 1, topLeftY + 2);
+        do Screen.drawRectangle(topLeftX + 1, topLeftY + 5, topLeftX + dimension - 1, topLeftY + 6);
+        return;
+    }
+
+    method void drawFlag() {
+        do Screen.setColor(false);
+        do Screen.drawLine(topLeftX + 1, topLeftY + 3, topLeftX + 3, topLeftY + 1);
+        do Screen.drawLine(topLeftX + 4, topLeftY + 1, topLeftX + 6, topLeftY + 1);
+        do Screen.drawLine(topLeftX + 1, topLeftY + 4, topLeftX + 5, topLeftY + 4);
+        do Screen.drawLine(topLeftX + 6, topLeftY + 1, topLeftX + 6, topLeftY + 8);
+        do Screen.drawLine(topLeftX + 2, topLeftY + 9, topLeftX + 9, topLeftY + 9);
+        do Screen.drawLine(topLeftX + 1, topLeftY + 10, topLeftX + 10, topLeftY + 10);
+        return;
+    }
+
+    method void drawNum(int num) {
+        do Screen.setColor(true);
+        if (num = 1) {
+            do Screen.drawLine(topLeftX + 5, topLeftY + 1, topLeftX + 7, topLeftY + 1);
+            do Screen.drawLine(topLeftX + 4, topLeftY + 2, topLeftX + 7, topLeftY + 2);
+            do Screen.drawRectangle(topLeftX + 6, topLeftY + 3, topLeftX + 7, topLeftY + 8);
+            do Screen.drawRectangle(topLeftX + 4, topLeftY + 9, topLeftX + 9, topLeftY + 10);
+        }
+        if (num = 2) {
+            do Screen.drawLine(topLeftX + 2, topLeftY + 3, topLeftX + 4, topLeftY + 1);
+            do Screen.drawLine(topLeftX + 2, topLeftY + 4, topLeftX + 5, topLeftY + 1);
+            do Screen.drawLine(topLeftX + 3, topLeftY + 4, topLeftX + 6, topLeftY + 1);
+            do Screen.drawLine(topLeftX + 6, topLeftY + 2, topLeftX + 9, topLeftY + 5);
+            do Screen.drawLine(topLeftX + 7, topLeftY + 2, topLeftX + 9, topLeftY + 4);
+            do Screen.drawLine(topLeftX + 7, topLeftY + 1, topLeftX + 9, topLeftY + 3);
+            do Screen.drawLine(topLeftX + 7, topLeftY + 5, topLeftX + 8, topLeftY + 5);
+            do Screen.drawLine(topLeftX + 5, topLeftY + 6, topLeftX + 8, topLeftY + 6);
+            do Screen.drawLine(topLeftX + 3, topLeftY + 7, topLeftX + 6, topLeftY + 7);
+            do Screen.drawLine(topLeftX + 2, topLeftY + 8, topLeftX + 4, topLeftY + 8);
+            do Screen.drawRectangle(topLeftX + 2, topLeftY + 9, topLeftX + 9, topLeftY + 10);
+        }
+        if (num = 3) {
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 1, topLeftX + 10, topLeftY + 2);
+            do Screen.drawRectangle(topLeftX + 4, topLeftY + 5, topLeftX + 8, topLeftY + 6);
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 9, topLeftX + 8, topLeftY + 10);
+            do Screen.drawRectangle(topLeftX + 9, topLeftY + 1, topLeftX + 10, topLeftY + 10);
+        }
+        if (num = 4) {
+            do Screen.drawLine(topLeftX + 1, topLeftY + 5, topLeftX + 5, topLeftY + 1);
+            do Screen.drawLine(topLeftX + 1, topLeftY + 6, topLeftX + 6, topLeftY + 1);
+            do Screen.drawLine(topLeftX + 1, topLeftY + 7, topLeftX + 7, topLeftY + 1);
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 6, topLeftX + 10, topLeftY + 7);
+            do Screen.drawRectangle(topLeftX + 7, topLeftY + 1, topLeftX + 8, topLeftY + 10);
+        }
+        if (num = 5) {
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 1, topLeftX + 10, topLeftY + 2);
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 3, topLeftX + 2, topLeftY + 6);
+            do Screen.drawRectangle(topLeftX + 3, topLeftY + 5, topLeftX + 10, topLeftY + 6);
+            do Screen.drawRectangle(topLeftX + 9, topLeftY + 7, topLeftX + 10, topLeftY + 10);
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 9, topLeftX + 8, topLeftY + 10);
+        }
+        if (num = 6) {
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 1, topLeftX + 10, topLeftY + 2);
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 3, topLeftX + 2, topLeftY + 10);
+            do Screen.drawRectangle(topLeftX + 3, topLeftY + 5, topLeftX + 10, topLeftY + 6);
+            do Screen.drawRectangle(topLeftX + 3, topLeftY + 9, topLeftX + 10, topLeftY + 10);
+            do Screen.drawRectangle(topLeftX + 9, topLeftY + 7, topLeftX + 10, topLeftY + 8);
+        }
+        if (num = 7) {
+            do Screen.drawLine(topLeftX + 2, topLeftY + 10, topLeftX + 7, topLeftY + 5);
+            do Screen.drawLine(topLeftX + 3, topLeftY + 10, topLeftX + 8, topLeftY + 5);
+            do Screen.drawLine(topLeftX + 4, topLeftY + 10, topLeftX + 9, topLeftY + 5);
+            do Screen.drawRectangle(topLeftX + 3, topLeftY + 1, topLeftX + 10, topLeftY + 2);
+            do Screen.drawRectangle(topLeftX + 8, topLeftY + 3, topLeftX + 10, topLeftY + 4);
+        }
+        if (num = 8) {
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 1, topLeftX + 10, topLeftY + 2);
+            do Screen.drawRectangle(topLeftX + 1, topLeftY + 3, topLeftX + 2, topLeftY + 10);
+            do Screen.drawRectangle(topLeftX + 3, topLeftY + 5, topLeftX + 8, topLeftY + 6);
+            do Screen.drawRectangle(topLeftX + 3, topLeftY + 9, topLeftX + 8, topLeftY + 10);
+            do Screen.drawRectangle(topLeftX + 9, topLeftY + 3, topLeftX + 10, topLeftY + 10);
+        }
+        return;
+    }
+
+    method void drawX() {
+        do Screen.drawLine(topLeftX + 1, topLeftY + 1, topLeftX + dimension - 1, topLeftY + dimension - 1);
+        do Screen.drawLine(topLeftX + 1, topLeftY + 2, topLeftX + dimension - 2, topLeftY + dimension - 1);
+        do Screen.drawLine(topLeftX + 2, topLeftY + 1, topLeftX + dimension - 1, topLeftY + dimension - 2);
+        do Screen.drawLine(topLeftX + 1, topLeftY + dimension - 1, topLeftX + dimension - 1, topLeftY + 1);
+        do Screen.drawLine(topLeftX + 1, topLeftY + dimension - 2, topLeftX + dimension - 2, topLeftY + 1);
+        do Screen.drawLine(topLeftX + 2, topLeftY + dimension - 1, topLeftX + dimension - 1, topLeftY + dimension - 2);
+        return;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+}

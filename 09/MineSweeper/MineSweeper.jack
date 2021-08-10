@@ -1,0 +1,179 @@
+class MineSweeper {
+    field Board board;
+    field bool gameOver;
+    field bool randomSeeded;
+    field String use, arrow, keys, to_move, space, open, F, N, P, R, T, Y, you_win, you_lost;
+
+    constructor MineSweeper new() {
+        let board = Board.new();
+        let gameOver = false;
+        let randomSeeded = false;
+        let use = "use";
+        let arrow = "arrow";
+        let keys = "keys";
+        let to_move = "to move";
+        let space = "space bar";
+        let open = "  : open";
+        let F = "F : flag";
+        let N = "N : new";
+        let P = "P : quit";
+        let R = "R : 9x9 board 10 mines";
+        let T = "T : 16x16 board 40 mines ";
+        let Y = "Y : 16x30 board 99 mines";
+        let you_win = "YOU WIN!";
+        let you_lost = "YOU LOST!";
+        return this;
+    }
+    
+    method void initGame() {
+        let gameOver = false;
+        do Output.moveCursor(3, 1);
+        do Output.printString(use);
+        do Output.moveCursor(4, 1);
+        do Output.printString(arrow);
+        do Output.moveCursor(5, 1);
+        do Output.printString(keys);
+        do Output.moveCursor(6, 1);
+        do Output.printString(to_move);
+        do Output.moveCursor(8, 1);
+        do Output.printString(space);
+        do Output.moveCursor(9, 1);
+        do Output.printString(open);
+        do Output.moveCursor(10, 1);
+        do Output.printString(F);
+        do Output.moveCursor(11, 1);
+        do Output.printString(N);
+        do Output.moveCursor(12, 1);
+        do Output.printString(P);
+        return;
+    }
+
+    /* 0 for beginner, 1 for intermediate, 2 for expert*/
+    method int menu() {
+        var char keyPress;
+        var int seed;
+        do Screen.clearScreen();
+        do Output.moveCursor(10, 10);
+        do Output.printString(R);
+        do Output.moveCursor(12, 10);
+        do Output.printString(T);
+        do Output.moveCursor(14, 10);
+        do Output.printString(Y);
+        let keyPress = Keyboard.keyPressed();
+        let seed = 1;
+        while (~(keyPress = 82) & ~(keyPress = 84) & ~(keyPress = 89)) {
+            let keyPress = Keyboard.keyPressed();
+            let seed = seed + 1;
+            if (seed = 32749) { let seed = 1; }
+        }
+        if (~randomSeeded) {
+            do Random.setSeed(seed);
+            let randomSeeded = true;
+        }
+        if (keyPress = 82) {
+            return 0;
+        }
+        if (keyPress = 84) {
+            return 1;
+        }
+        return 2;
+    }
+
+    method void run() {
+        var int difficulty;
+        var boolean quit;
+        let quit = false;
+        while (~quit) {
+            let difficulty = menu();
+            do Screen.clearScreen();
+            if (difficulty = 0) {
+                do board.setBoard(9, 9, 10);
+                do writeRemainingFlags(10);
+            } else {
+                if (difficulty = 1) {
+                    do board.setBoard(16, 16, 40);
+                    do writeRemainingFlags(40);
+                }
+                else {
+                    do board.setBoard(16, 30, 99);
+                    do writeRemainingFlags(99);
+                }
+            }
+            do initGame();
+            let quit = runGame();
+        }
+        return;
+    }
+
+    method boolean runGame() {
+        var char keyPress;
+        let keyPress = Keyboard.keyPressed();
+        while (~(keyPress = 78) & ~(keyPress = 80)) {
+            let keyPress = Keyboard.keyPressed();
+            if (~gameOver) {
+                if (keyPress = 130) { do board.moveCursor(0, -1); }
+                if (keyPress = 131) { do board.moveCursor(-1, 0); }
+                if (keyPress = 132) { do board.moveCursor(0, 1); }
+                if (keyPress = 133) { do board.moveCursor(1, 0); }
+                if (keyPress = 32) { 
+                    let gameOver = board.openSelectedCell(); 
+                    if (gameOver) {
+                        if (board.isWin()) {
+                            do win();
+                        } else {
+                            do lost();
+                        }
+                    }
+                }
+                if (keyPress = 70) { 
+                    do board.flagSelectedCell(); 
+                    do writeRemainingFlags(board.getRemainingFlags());
+                }
+                while (~(keyPress = 0) & ~(keyPress = 78) & ~(keyPress = 80)) { let keyPress = Keyboard.keyPressed(); }
+            }
+        }
+        if (keyPress = 78) { return false; }
+        return true;
+    }
+    
+    method void win() {
+        do Output.moveCursor(1,1);
+        do Output.printString(you_win);
+        do writeRemainingFlags(0);
+        return;
+    }
+
+    method void lost() {
+        do Output.moveCursor(1,1);
+        do Output.printString(you_lost);
+        return;
+    }
+
+    method void writeRemainingFlags(int flags) {
+        do Output.moveCursor(15, 5);
+        do Output.backSpace();
+        do Output.backSpace();
+        do Output.printInt(flags);
+        return;
+    }
+
+    method void dispose() {
+        do board.dispose();
+        do use.dispose();
+        do arrow.dispose();
+        do keys.dispose();
+        do to_move.dispose();
+        do space.dispose();
+        do open.dispose();
+        do F.dispose();
+        do N.dispose();
+        do P.dispose();
+        do R.dispose();
+        do T.dispose();
+        do Y.dispose();
+        do you_lost.dispose();
+        do you_win.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+}

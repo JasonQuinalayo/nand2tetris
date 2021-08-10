@@ -1,0 +1,41 @@
+class Queue {
+    field int capacity;
+    field Array queue;
+    field int head, tail;
+    
+    constructor Queue new(int a_capacity) {
+        let capacity = a_capacity;
+        let head = 0;
+        let tail = 0;
+        let queue = Array.new(a_capacity);
+        return this;
+    }
+
+    method void push(int value) {
+        let queue[tail] = value;
+        let tail = tail + 1;
+        return;
+    }
+
+    method int pop() {
+        if (tail = head) { return 0; }
+        let head = head + 1;
+        return queue[head - 1];
+    }
+
+    method bool isEmpty() {
+        return head = tail;
+    }
+
+    method void reset() {
+        let tail = 0;
+        let head = 0;
+        return;
+    }
+
+    method void dispose() {
+        do stack.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+}

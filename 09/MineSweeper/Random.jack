@@ -1,0 +1,29 @@
+/** Random number generator using a simple linear congruential generator(lcg)*/
+class Random{
+    static int seed;
+
+    function void setSeed(int a_seed) {
+        let seed = a_seed;
+        return;
+    }
+
+    /* returns a random integer in the range [0,32749) */
+    function int getRand32749() {
+        let seed = 219 * seed & 32767;
+        if (seed > 32748) { let seed = seed - 32749; }
+        return seed;
+    }
+
+    /* rand from [0,bound]. Due to absence of floating point numbers,
+    the bound number may get slightly lower probability of getting generated*/
+    function int getRand(int bound) {
+        var int rand;
+        var int scale;
+        var int res;
+        let rand = Random.getRand32749();
+        let scale = 32749 / bound;
+        let res = rand / scale;
+        if (res > bound) { return bound; }
+        return res;
+    }
+}

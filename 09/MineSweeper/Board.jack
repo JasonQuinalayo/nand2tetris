@@ -1,0 +1,462 @@
+class Board {
+    field int rows, columns;
+    field int topLeftX, topLeftY;
+    field int cursorRow, cursorColumn;
+    field int maxRows, maxColumns;
+    field int cellDimension;
+    field int remainingOpenCells;
+    field int remainingFlags;
+    field boolean win;
+    field Cell selectedCell;
+    field Array cells;
+    field Array bombLocations;
+    field Array bfsQueued;
+    field Queue queue;
+
+    constructor Board new() {
+        let maxColumns = 30;
+        let cellDimension = 12;
+        do Cell.setDimension(cellDimension);
+        let rows = 0;
+        let columns = 0;
+        let topLeftX = 80;
+        let topLeftY = 25;
+        let cursorRow = 0;
+        let cursorColumn = 0;
+        let remainingOpenCells = 32767;
+        let remainingFlags = 32767;
+        let win = false;
+        let maxRows = 16;
+        let selectedCell = null;
+        let bfsQueued = Array.new(maxRows * maxColumns);
+        let queue = Queue.new(maxRows * maxColumns);
+        do initCells();
+        return this;
+    }
+
+    method void initCells() {
+        var int i, j;
+        var Array cellRow;
+        let cells = Array.new(maxRows);
+        let bombLocations = Array.new(maxRows * maxColumns);
+        let i = 0;
+        while (i < maxRows) {
+            let cells[i] = Array.new(maxColumns);
+            let cellRow = cells[i];
+            let j = 0;
+            while (j < maxColumns) {
+                let cellRow[j] = Cell.new(
+                    topLeftX + (j * cellDimension) + (j * 2), 
+                    topLeftY + (i * cellDimension) + (i * 2)
+                );
+                let bombLocations[i * maxColumns + j] = false;
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method void setBoard(int a_rows, int a_cols, int numOfBombs) {
+        var Cell cell;
+        var Array cellRow;
+        let rows = a_rows;
+        let columns = a_cols;
+        let remainingFlags = numOfBombs;
+        do resetCells();
+        do generateBombLocations(numOfBombs, a_rows * a_cols);
+        do setBombs();
+        do setNeighboringBombs();
+        let remainingOpenCells = a_rows * a_cols - numOfBombs;
+        let cursorRow = 0;
+        let cursorColumn = 0;
+        let cellRow = cells[0];
+        let cell = cellRow[0];
+        do cell.select();
+        let selectedCell = cell;
+        do draw();
+        return;
+    }
+
+    method void setBombs() {
+        var int i, j;
+        var Array cellRow;
+        var Cell cell;
+        let i = 0;
+        while (i < rows) {
+            let cellRow = cells[i];
+            let j = 0;
+            while (j < columns) {
+                if (bombLocations[i * columns + j]) {
+                    let cell = cellRow[j];
+                    do cell.setBomb();
+                }
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method void setNeighboringBombs() {
+        var int i;
+        var int di, dj;
+        var int newCurRow, newCurColumn;
+        var int curRow, curColumn;
+        var Array cellRow;
+        var Cell cell;
+        var int numOfCells;
+        let numOfCells = rows * columns;
+        let i = 0;
+        while (i < numOfCells) {
+            if (bombLocations[i]) {
+                let curRow = i / columns;
+                let curColumn = MathModulo.mod(i, columns);
+                let di = -1;
+                while (di < 2) {
+                    let dj = -1;
+                    while (dj < 2) {
+                        if (~((di = 0) & (dj = 0))) {
+                            let newCurRow = curRow + di;
+                            let newCurColumn = curColumn + dj;
+                            if ((newCurRow > -1) & (newCurRow < rows) & (newCurColumn > -1) & (newCurColumn < columns)) {
+                                let cellRow = cells[newCurRow];
+                                let cell = cellRow[newCurColumn];
+                                if (~cell.isBomb()) {
+                                    do cell.setNumberOfNeighboringBombs(cell.getNumberOfNeighboringBombs() + 1);
+                                }
+                            }
+                        }
+                        let dj = dj + 1;
+                    }
+                    let di = di + 1;
+                }
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method void resetCells() {
+        var int i, j;
+        var Array cellRow;
+        var Cell cell;
+        let i = 0;
+        while (i < maxRows) {
+            let cellRow = cells[i];
+            let j = 0;
+            while (j < maxColumns) {
+                let cell = cellRow[j];
+                do cell.close();
+                do cell.removeBomb();
+                do cell.removeFlag();
+                do cell.deselect();
+                do cell.setNumberOfNeighboringBombs(0);
+                let bombLocations[i * maxColumns + j] = false;
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method void generateBombLocations(int numOfBombs, int totalNumOfCells) {
+        var int randInt;
+        var int i;
+        let i = 0;
+        while (i < numOfBombs) {
+            let randInt = Random.getRand(totalNumOfCells - 1);
+            if (~bombLocations[randInt]) {
+                let bombLocations[randInt] = true;
+                let i = i + 1;
+            }
+        }
+        return;
+    }
+
+    method void moveCursor(int rowInc, int columnInc) {
+        var int newRow, newColumn;
+        var Array cellRow;
+        var Cell cell;
+        let newRow = cursorRow + rowInc;
+        let newColumn = cursorColumn + columnInc;
+        if ((newRow < 0) | (newRow > (rows - 1)) | (newColumn < 0) | (newColumn > (columns - 1))) {
+            return;
+        }
+        let cellRow = cells[cursorRow];
+        let cell = cellRow[cursorColumn];
+        do cell.deselect();
+        do cell.draw();
+        let cellRow = cells[newRow];
+        let cell = cellRow[newColumn];
+        let selectedCell = cell;
+        do cell.select();
+        do cell.draw();
+        let cursorRow = newRow;
+        let cursorColumn = newColumn;
+        return;
+    }
+
+    method boolean openSelectedCell() {
+        if (selectedCell.isFlagged()) { return false; }
+        if (selectedCell.isBomb()) { 
+            do gameOverLost();
+            return true; 
+        }
+        if (selectedCell.isOpen()) {
+            return openAdjacentCells(cursorRow, cursorColumn);
+        } else {
+            do openCell(selectedCell, cursorRow, cursorColumn);
+        }
+        if (remainingOpenCells = 0) { 
+            do gameOverWin();
+            return true; 
+        }
+        return false;
+    }
+
+    method void openCell(Cell cell, int row, int column) {
+        if (cell.getNumberOfNeighboringBombs() > 0) { 
+            do cell.open(); 
+            do cell.draw();
+            let remainingOpenCells = remainingOpenCells - 1;
+        }
+        else {
+            do clearBfsQueued();
+            do bfs(row, column);
+        }
+        return;
+    }
+
+    method boolean openAdjacentCells(int row, int column) {
+        var int i, j;
+        var int newRow, newColumn;
+        var int numOfFlags;
+        var Array cellRow, nCellRow;
+        var Cell cell, nCell;
+        let numOfFlags = 0;
+        let cellRow = cells[row];
+        let cell = cellRow[column];
+        let i = -1;
+        while (i < 2) {
+            let j = - 1;
+            while (j < 2) {
+                if (~((i = 0) & (j = 0))) {
+                    let newRow = row + i;
+                    let newColumn = column + j;
+                    if ((newRow > -1) & (newRow < rows) & (newColumn > -1) & (newColumn < columns)) {
+                        let nCellRow = cells[newRow];
+                        let nCell = nCellRow[newColumn];
+                        if (nCell.isFlagged()) {
+                            let numOfFlags = numOfFlags + 1;
+                        }
+                    }
+                }
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        if (~(numOfFlags = cell.getNumberOfNeighboringBombs())) { return false; }
+        let i = -1;
+        while (i < 2) {
+            let j = - 1;
+            while (j < 2) {
+                if (~((i = 0) & (j = 0))) {
+                    let newRow = row + i;
+                    let newColumn = column + j;
+                    if ((newRow > -1) & (newRow < rows) & (newColumn > -1) & (newColumn < columns)) {
+                        let nCellRow = cells[newRow];
+                        let nCell = nCellRow[newColumn];
+                        if (~nCell.isOpen() & ~nCell.isFlagged()) {
+                            if (nCell.isBomb()) {
+                                do gameOverLost();
+                                return true;
+                            } else {
+                                do openCell(nCell, newRow, newColumn);
+                            }
+                        }
+                    }
+                }
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        if (remainingOpenCells = 0) { 
+            do gameOverWin();
+            return true; 
+        }
+        return false;
+    }
+
+    method void gameOverLost() {
+        var int i, j;
+        var Array cellRow;
+        var Cell cell;
+        let win = false;
+        let i = 0;
+        while(i < rows) {
+            let j = 0;
+            while (j < columns) {
+                let cellRow = cells[i];
+                let cell = cellRow[j];
+                if (cell.isBomb()) {
+                    if (~cell.isFlagged()) {
+                        do cell.open();
+                        do cell.draw();
+                    }
+                }
+                if (cell.isFlagged() & ~cell.isBomb()) {
+                    do cell.drawX();
+                }
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method void gameOverWin() {
+        var int i, j;
+        var Array cellRow;
+        var Cell cell;
+        let win = true;
+        let i = 0;
+        while(i < rows) {
+            let j = 0;
+            while (j < columns) {
+                let cellRow = cells[i];
+                let cell = cellRow[j];
+                if (cell.isBomb()) {
+                    do cell.flag();
+                    do cell.draw();
+                }
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method boolean isWin() {
+        return win;
+    }
+
+    method void clearBfsQueued() {
+        var int i;
+        var int maxCells;
+        let i = 0;
+        let maxCells = maxRows * maxColumns;
+        while (i < maxCells) {
+            let bfsQueued[i] = false;
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method void bfs(int row, int column) {
+        var int popped;
+        var int curRow, curColumn;
+        var int newCurRow, newCurColumn;
+        var int i, j;
+        var Cell cell;
+        var Array cellRow;
+        do queue.reset();
+        do queue.push(row * columns + column);
+        let bfsQueued[row * columns + column] = true;
+        while (~queue.isEmpty()) {
+            let popped = queue.pop();
+            let curRow = popped / columns;
+            let curColumn = MathModulo.mod(popped, columns);
+            let cellRow = cells[curRow];
+            let cell = cellRow[curColumn];
+            if (~cell.isFlagged() & ~cell.isBomb() & ~cell.isOpen()) {
+                do cell.open();
+                do cell.draw();
+                let remainingOpenCells = remainingOpenCells - 1;
+                if (cell.getNumberOfNeighboringBombs() = 0) {
+                    let i = -1;
+                    while (i < 2) {
+                        let j = -1;
+                        while (j < 2) {
+                            if (~((i = 0) & (j = 0))) {
+                                let newCurRow = curRow + i;
+                                let newCurColumn = curColumn + j;
+                                if ((newCurRow > -1) & (newCurRow < rows) & (newCurColumn > -1) & (newCurColumn < columns)) {
+                                    if (~bfsQueued[newCurRow * columns + newCurColumn]) {
+                                        do queue.push(newCurRow * columns + newCurColumn);
+                                        let bfsQueued[newCurRow * columns + newCurColumn] = true;
+                                    } 
+                                }
+                            }
+                            let j = j + 1;
+                        }
+                        let i = i + 1;
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    method void flagSelectedCell() {
+        if (selectedCell.isOpen()) { return; }
+        if (selectedCell.isFlagged()) {
+            do selectedCell.removeFlag(); 
+            let remainingFlags = remainingFlags + 1;
+        }
+        else { 
+            do selectedCell.flag();
+            let remainingFlags = remainingFlags - 1;
+        }
+        do selectedCell.draw();
+        return;
+    }
+
+    method void draw() {
+        var Array cellRow;
+        var Cell cell;
+        var int i, j;
+        let i = 0;
+        while (i < rows) {
+            let cellRow = cells[i];
+            let j = 0;
+            while (j < columns) {
+                let cell = cellRow[j];
+                do cell.draw();
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method int getRemainingFlags() {
+        return remainingFlags;
+    }
+
+    method void dispose() {
+        do disposeCells();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void disposeCells() {
+        var Array cellRow;
+        var Cell cell;
+        var int i, j;
+        let i = 0;
+        while (i < rows) {
+            let cellRow = cells[i];
+            let j = 0;
+            while (j < columns) {
+                let cell = cellRow[j];
+                do cell.dispose();
+                let j = j + 1;
+            }
+            do cellRow.dispose();
+            let i = i + 1;
+        }
+        do cells.dispose();
+        return;
+    }
+}

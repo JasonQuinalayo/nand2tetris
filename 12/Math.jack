@@ -1,0 +1,109 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Math.jack
+
+/**
+ * A library of commonly used mathematical functions.
+ * Note: Jack compilers implement multiplication and division using OS method calls.
+ */
+class Math {
+    static Array twoToTheIth;
+
+    /** Initializes the library. */
+    function void init() {
+        var int i, powOf2;
+        let twoToTheIth = Array.new(16);
+        let powOf2 = 1;
+        while (i < 16) {
+            let twoToTheIth[i] = powOf2;
+            let powOf2 = powOf2 + powOf2;
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /** Returns the absolute value of x. */
+    function int abs(int x) {
+        if (x < 0) { return -x; }
+        return x;
+    }
+
+    /** Returns the product of x and y. 
+     *  When a Jack compiler detects the multiplication operator '*' in the 
+     *  program's code, it handles it by invoking this method. In other words,
+     *  the Jack expressions x*y and multiply(x,y) return the same value.
+     */
+    function int multiply(int x, int y) {
+        var int shiftedX, i, sum;
+        let shiftedX = x;
+        while (i < 16) {
+            if (y & twoToTheIth[i]) {
+                let sum = sum + shiftedX;
+            }
+            let shiftedX = shiftedX + shiftedX;
+            let i = i + 1;
+        }
+        return sum;
+    }
+
+    /** Returns the integer part of x/y.
+     *  When a Jack compiler detects the multiplication operator '/' in the 
+     *  program's code, it handles it by invoking this method. In other words,
+     *  the Jack expressions x/y and divide(x,y) return the same value.
+     */
+    function int divide(int x, int y) {
+        var int q, r;
+        var int i;
+        var bool sign;
+        if ((x < 0 & (y < 0)) | (x > 0 & (y > 0))) { let sign = true; }
+        else { let sign = false; }
+        let x = Math.abs(x);
+        let y = Math.abs(y);
+        let i = 15;
+        while (i > -1) {
+            let r = r + r;
+            if (x & twoToTheIth[i]) {
+                let r = r | 1;
+            } else {
+                let r = r & 32766;
+            }
+            if (~(r < y)) {
+                let r = r - y;
+                let q = q | twoToTheIth[i];
+            }
+            let i = i - 1;
+        }
+        if (sign) { return q; }
+        return -q;
+    }
+
+    /** Returns the integer part of the square root of x. */
+    function int sqrt(int x) {
+        var int left, right;
+        var int mid, ans;
+        let right = x;
+        while (~(left > right)) {
+            let mid = left + ((right - left) / 2);
+            if (~(mid > (x / mid))) {
+                let ans = mid;
+                let left = mid + 1;
+            } else {
+                let right = mid - 1;
+            }
+        }
+        return ans;
+    }
+
+    /** Returns the greater number. */
+    function int max(int a, int b) {
+        if (a > b) { return a; }
+        return b;
+    }
+
+    /** Returns the smaller number. */
+    function int min(int a, int b) {
+        if (a < b) { return a; }
+        return b;
+    }
+}
